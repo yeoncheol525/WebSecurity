@@ -1,0 +1,11 @@
+**
+!run.py
+!requirements.txt
+!minishop/
+!minishop/**
+!scripts/
+!scripts/init_db.py
+!wheelhouse/
+!wheelhouse/**
+**/__pycache__/
+**/*.pyc

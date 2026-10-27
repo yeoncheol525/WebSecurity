@@ -1,0 +1,38 @@
+# Each developer creates their own environment and database.
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+/instance/
+/wheelhouse/
+/vm/
+/archive/
+*.sqlite
+*.sqlite3
+*.db
+*.log
+.env
+.env.*
+!.env.example
+
+# Large machine-specific VM files and captures.
+*.vmdk
+*.vmem
+*.vmss
+*.vmsn
+*.iso
+*.ova
+*.7z
+*.pcap
+*.pcapng
+*.har
+
+# Editor and OS-generated files.
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+desktop.ini
+~$*
+*.tmp

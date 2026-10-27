@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>{% block title %}MiniShop{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <a class="skip-link" href="#main-content">본문으로 이동</a>
+  <div class="announcement">일상의 작은 발견, MiniShop</div>
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="/" aria-label="MiniShop 홈">
+        <svg class="brand-icon" width="30" height="34" viewBox="0 0 30 34" fill="none" aria-hidden="true"><path d="M5 10h20l2 21H3l2-21Z" fill="currentColor"/><path d="M10 12V7a5 5 0 0 1 10 0v5" stroke="currentColor" stroke-width="2.5"/><path d="m10 20 3 3 7-7" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>MiniShop<span class="brand-dot">.</span></span>
+      </a>
+      <nav class="main-nav" aria-label="주요 메뉴">
+        <a href="/products"{% if request.path == '/products' %} class="active" aria-current="page"{% endif %}>상품 둘러보기</a>
+        {% if current_user %}<a href="/orders"{% if request.path.startswith('/orders') %} class="active" aria-current="page"{% endif %}>내 주문</a>{% endif %}
+      </nav>
+      <div class="account-nav">
+        {% if current_user %}
+          <span class="username">{{ current_user.username }}<span>님</span></span>
+          <form action="/logout" method="post"><button class="text-button" type="submit">로그아웃</button></form>
+        {% else %}
+          <a class="button button-small button-outline" href="/login">로그인 <span aria-hidden="true">↗</span></a>
+        {% endif %}
+      </div>
+    </div>
+  </header>
+  <main id="main-content">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}<div class="container flash-stack" aria-live="polite">{% for category, message in messages %}<div class="flash {% if category in ['error', 'danger'] %}flash-error{% else %}flash-info{% endif %}">{{ message }}</div>{% endfor %}</div>{% endif %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+  </main>
+  <footer class="site-footer">
+    <div class="container footer-inner"><a class="footer-brand" href="/">MiniShop.</a><span>작은 선택으로 채우는 일상.</span><span class="footer-lab">Team 4</span></div>
+  </footer>
+</body>
+</html>

@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% set error_code = status_code|default(code|default(500)) %}
+{% block title %}요청 안내 · MiniShop{% endblock %}
+{% block content %}
+<section class="container error-section"><span class="error-code" aria-hidden="true">{{ error_code }}</span><span class="eyebrow">LET’S FIND YOUR WAY</span>
+  {% if error_code == 403 %}<h1>이 페이지에 접근할 수 없어요<span>.</span></h1><p>접근 가능한 페이지에서 다시 확인해 주세요.</p>
+  {% elif error_code == 404 %}<h1>페이지를 찾을 수 없어요<span>.</span></h1><p>주소를 확인하거나 홈에서 다시 시작해 주세요.</p>
+  {% elif error_code == 401 %}<h1>로그인이 필요해요<span>.</span></h1><p>로그인한 뒤 다시 이용해 주세요.</p>
+  {% else %}<h1>요청을 처리할 수 없어요<span>.</span></h1><p>잠시 후 다시 시도하거나 홈으로 이동해 주세요.</p>{% endif %}
+  <div class="error-actions"><a class="button button-primary" href="/">홈으로 이동 <span aria-hidden="true">→</span></a>{% if current_user %}<a class="inline-link" href="/orders">내 주문 보기</a>{% else %}<a class="inline-link" href="/login">로그인하기</a>{% endif %}</div>
+</section>
+{% endblock %}

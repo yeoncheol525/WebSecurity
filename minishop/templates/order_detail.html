@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}주문 상세 · MiniShop{% endblock %}
+{% block content %}
+<section class="container page-section detail-section">
+  <a class="back-link" href="/orders"><span aria-hidden="true">←</span> 내 주문 목록</a>
+  <div class="page-heading"><div><span class="eyebrow">ORDER DETAILS</span><h1>주문 상세<span>.</span></h1><p>주문한 상품을 확인하세요.</p></div></div>
+  <article class="order-detail-card"><div class="detail-card-top"><span class="eyebrow">YOUR ORDER</span><span class="detail-order-id">#{{ order.id }}</span></div><div class="detail-product-row"><div class="detail-product-art" aria-hidden="true"><div class="product-box"><span>m.</span></div></div><div class="detail-product-copy"><span class="product-category">MINISHOP COLLECTION</span><h2>{{ order.product_name }}</h2><p>선택한 수량 <strong>{{ order.quantity }}개</strong></p></div></div><dl class="detail-summary"><div><dt>주문번호</dt><dd>#{{ order.id }}</dd></div><div><dt>상품명</dt><dd>{{ order.product_name }}</dd></div><div><dt>주문 수량</dt><dd>{{ order.quantity }}개</dd></div></dl></article>
+  <div class="detail-bottom"><a class="button button-outline" href="/orders">내 주문 목록으로 <span aria-hidden="true">→</span></a></div>
+</section>
+{% endblock %}
