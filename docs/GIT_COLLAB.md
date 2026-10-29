@@ -4,6 +4,8 @@
 
 저장소: [yeoncheol525/WebSecurity](https://github.com/yeoncheol525/WebSecurity)
 
+비공개 저장소이므로 접근 권한이 있는 GitHub 계정이 필요합니다. 초대된 계정은 초대를 수락한 뒤 [README의 GitHub 인증 절차](../README.md#빠른-시작)를 진행합니다. Ubuntu의 Git 인증은 Windows 브라우저 로그인과 별도로 설정합니다.
+
 소스·문서·Docker 실행 구성을 Git으로 관리합니다. 실행 환경은 **Ubuntu VM 안의 Docker**이며, 최초 설치와 실행 절차는 [README](../README.md#빠른-시작)를 참고합니다. Git 명령은 소스를 관리할 Ubuntu의 프로젝트 폴더에서 실행합니다.
 
 VM 디스크·로컬 DB·`.env`·OS 계정·SSH 키는 공유 대상이 아닙니다. `/vm/`, `/instance/`, `.env`, 가상환경, 로그 등은 `.gitignore`에서 제외합니다. 커밋 전에 `git status`와 `git diff --cached`로 실제 포함 파일을 확인합니다.

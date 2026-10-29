@@ -17,17 +17,43 @@ Docker Engine과 Compose는 **Ubuntu VM 안에 설치**합니다. 호스트 Wind
 
 - Ubuntu 24.04 LTS VM과 `sudo` 권한
 - 설치 패키지·소스·컨테이너 이미지를 다운로드할 인터넷 연결
+- 비공개 저장소에 접근할 수 있는 GitHub 계정. 초대된 계정은 저장소 초대를 먼저 수락해야 합니다.
 - Kali에서 접속할 경우 두 VM 사이의 Host-only 네트워크
 
 VM 생성·가져오기, 운영체제 이미지, Kali 도구 설치는 저장소의 자동 구성 범위에 포함하지 않습니다. Host-only 네트워크만 연결된 VM은 외부 다운로드가 불가능하므로 최초 설치 전에 인터넷 연결을 준비해야 합니다.
 
 ## 빠른 시작
 
-다음 명령은 **Ubuntu 터미널에서** 실행합니다.
+다음 명령은 **Ubuntu 터미널에서** 실행합니다. Windows PowerShell에서 SSH로 Ubuntu에 접속한 터미널에서도 동일하게 실행할 수 있습니다.
+
+먼저 Git을 설치하고, GitHub CLI의 [공식 APT 저장소](https://github.com/cli/cli/blob/trunk/docs/install_linux.md#debian)를 등록해 현재 버전을 설치합니다. Ubuntu 기본 저장소의 구버전 GitHub CLI에는 GitHub API 호환성 문제가 있어 공식 배포 패키지를 사용합니다.
 
 ```bash
 sudo apt update
-sudo apt install -y git
+sudo apt install -y git curl ca-certificates
+sudo install -m 0755 -d /etc/apt/keyrings
+sudo curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg -o /etc/apt/keyrings/githubcli-archive-keyring.gpg
+sudo chmod 0644 /etc/apt/keyrings/githubcli-archive-keyring.gpg
+printf 'deb [arch=%s signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main\n' "$(dpkg --print-architecture)" \
+  | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+sudo apt update
+sudo apt install -y gh
+```
+
+GitHub 인증은 Ubuntu 사용자 계정별로 최초 한 번 진행합니다.
+
+```bash
+gh auth login --hostname github.com --git-protocol https --web
+```
+
+Git 인증 연동 여부를 물으면 `Yes`를 선택합니다. 터미널에 표시되는 일회용 코드를 확인하고, Windows 브라우저에서 [GitHub 기기 인증](https://github.com/login/device)을 열어 코드를 입력한 뒤 저장소 접근 권한이 있는 계정으로 승인을 완료합니다. Ubuntu Server나 SSH 환경에서는 브라우저를 자동으로 열지 못해도 Windows 브라우저에서 인증을 진행할 수 있습니다.
+
+Windows 브라우저의 로그인 정보는 Ubuntu에 자동으로 전달되지 않습니다. HTTPS Git 작업에는 GitHub 계정 비밀번호를 사용할 수 없으며, 위 절차로 인증한 GitHub CLI를 사용합니다. 자세한 내용은 [GitHub 인증 안내](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/about-authentication-to-github)를 참고합니다.
+
+인증이 완료되면 Git 인증 연동을 설정하고 저장소를 복제한 뒤 웹서버를 실행합니다.
+
+```bash
+gh auth setup-git
 git clone https://github.com/yeoncheol525/WebSecurity.git Team4_WebSecurity_Lab
 cd Team4_WebSecurity_Lab
 bash scripts/setup-ubuntu.sh
