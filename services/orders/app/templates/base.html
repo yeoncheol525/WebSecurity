@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>{% block title %}MiniShop{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <script src="{{ url_for('static', filename='app.js') }}" defer></script>
+</head>
+<body data-page="{{ page }}"{% if order_id is defined %} data-order-id="{{ order_id }}"{% endif %}>
+  <a class="skip-link" href="#main-content">본문으로 이동</a>
+  <div class="announcement">일상의 작은 발견, MiniShop</div>
+  <header class="site-header"><div class="container header-inner">
+    <a class="brand" href="/" aria-label="MiniShop 홈"><svg class="brand-icon" width="30" height="34" viewBox="0 0 30 34" fill="none" aria-hidden="true"><path d="M5 10h20l2 21H3l2-21Z" fill="currentColor"/><path d="M10 12V7a5 5 0 0 1 10 0v5" stroke="currentColor" stroke-width="2.5"/><path d="m10 20 3 3 7-7" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>MiniShop<span class="brand-dot">.</span></span></a>
+    <nav class="main-nav" aria-label="주요 메뉴"><a href="/shop"{% if page == 'products' %} class="active" aria-current="page"{% endif %}>상품 둘러보기</a><a href="/account/orders" id="orders-nav" hidden>내 주문</a></nav>
+    <div class="account-nav"><span class="username" id="account-name" hidden></span><button class="text-button" id="logout-button" type="button" hidden>로그아웃</button><a class="button button-small button-outline" href="/login" id="login-link">로그인 <span aria-hidden="true">↗</span></a></div>
+  </div></header>
+  <main id="main-content"><div class="container flash-stack" id="page-message" role="alert" hidden><div class="flash flash-error" id="page-message-text"></div></div>{% block content %}{% endblock %}</main>
+  <footer class="site-footer"><div class="container footer-inner"><a class="footer-brand" href="/">MiniShop.</a><span>작은 선택으로 채우는 일상.</span><span class="footer-lab">Team 4</span></div></footer>
+</body>
+</html>

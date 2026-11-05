@@ -1,0 +1,147 @@
+name: ${COMPOSE_PROJECT_NAME:-minishop}
+
+services:
+  postgres:
+    image: postgres:17-bookworm@sha256:839fbb5a4942a7758dd93e18b42ea5649807491a0545b5eeeb8f0b8bb11857a5
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-minishop}
+      POSTGRES_USER: ${POSTGRES_USER:-minishop_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Run scripts/create_env.py first}
+      POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256
+      CATALOG_READER_PASSWORD: ${CATALOG_READER_PASSWORD:?Generate .env first}
+      CATALOG_READER_WIDE_PASSWORD: ${CATALOG_READER_WIDE_PASSWORD:?Generate .env first}
+      ORDER_SERVICE_PASSWORD: ${ORDER_SERVICE_PASSWORD:?Generate .env first}
+      DEMO_USER1_PASSWORD_HASH: ${DEMO_USER1_PASSWORD_HASH:?Generate .env first}
+      DEMO_USER2_PASSWORD_HASH: ${DEMO_USER2_PASSWORD_HASH:?Generate .env first}
+    command: [postgres, -c, log_min_error_statement=fatal, -c, log_error_verbosity=terse]
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./database/init/00-bootstrap.sh:/docker-entrypoint-initdb.d/00-bootstrap.sh:ro
+      - ./database:/opt/minishop/database:ro
+    networks: [database]
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}" && psql -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}" -tAc "SELECT 1 FROM private.orders LIMIT 1" >/dev/null']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+    restart: unless-stopped
+
+  catalog-service:
+    build:
+      context: .
+      dockerfile: services/catalog/Dockerfile
+    environment:
+      DB_HOST: postgres
+      DB_PORT: '5432'
+      DB_NAME: ${POSTGRES_DB:-minishop}
+      DB_USER: catalog_reader
+      DB_PASSWORD: ${CATALOG_READER_PASSWORD:?Generate .env first}
+      SQL_QUERY_MODE: bound
+      LAB_EXPERIMENTS_ENABLED: 'false'
+    networks: [web, database]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, python, -c, 'import urllib.request; urllib.request.urlopen("http://127.0.0.1:8000/health", timeout=3)']
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    restart: unless-stopped
+
+  order-service:
+    build:
+      context: .
+      dockerfile: services/orders/Dockerfile
+    environment:
+      DB_HOST: postgres
+      DB_PORT: '5432'
+      DB_NAME: ${POSTGRES_DB:-minishop}
+      DB_USER: order_service
+      DB_PASSWORD: ${ORDER_SERVICE_PASSWORD:?Generate .env first}
+      SQL_QUERY_MODE: bound
+      SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-false}
+    networks: [web, database]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, python, -c, 'import urllib.request; urllib.request.urlopen("http://127.0.0.1:8000/health", timeout=3)']
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:stable-alpine@sha256:0e52bd054126cdc040b1276c0af347aeb02a41b9cfe305d6094767ac30e97949
+    user: '101:101'
+    entrypoint: [nginx, -g, 'daemon off;']
+    ports:
+      - '${BIND_ADDRESS:-127.0.0.1}:${HTTP_PORT:-18080}:8080'
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    networks: [edge, web]
+    depends_on:
+      catalog-service:
+        condition: service_healthy
+      order-service:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD-SHELL, 'wget -q -O /dev/null http://127.0.0.1:8080/health/catalog && wget -q -O /dev/null http://127.0.0.1:8080/health/orders']
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    restart: unless-stopped
+
+  tester:
+    profiles: [verification]
+    user: '${TEST_UID:-10001}:${TEST_GID:-10001}'
+    build:
+      context: .
+      dockerfile: tests/Dockerfile
+    environment:
+      BASE_URL: http://nginx:8080
+      DB_HOST: postgres
+      DB_NAME: ${POSTGRES_DB:-minishop}
+      DB_ADMIN_USER: ${POSTGRES_USER:-minishop_admin}
+      DB_ADMIN_PASSWORD: ${POSTGRES_PASSWORD:?Generate .env first}
+      CATALOG_READER_PASSWORD: ${CATALOG_READER_PASSWORD:?Generate .env first}
+      CATALOG_READER_WIDE_PASSWORD: ${CATALOG_READER_WIDE_PASSWORD:?Generate .env first}
+      ORDER_SERVICE_PASSWORD: ${ORDER_SERVICE_PASSWORD:?Generate .env first}
+      DEMO_USER1_PASSWORD: ${DEMO_USER1_PASSWORD:?Generate .env first}
+      DEMO_USER2_PASSWORD: ${DEMO_USER2_PASSWORD:?Generate .env first}
+    volumes:
+      - ./results:/results
+    networks: [web, database]
+    depends_on:
+      nginx:
+        condition: service_healthy
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+
+networks:
+  edge:
+  web:
+    internal: true
+  database:
+    internal: true
+
+volumes:
+  postgres-data:

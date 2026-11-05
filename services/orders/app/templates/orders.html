@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}내 주문 · MiniShop{% endblock %}
+{% block content %}
+<section class="container page-section">
+  <div class="page-heading"><div><span class="eyebrow">YOUR LITTLE FINDS</span><h1>내 주문 모아보기<span>.</span></h1><p>주문한 상품과 수량을 확인하세요.</p></div><span class="heading-mark" aria-hidden="true">↗</span></div>
+  <form action="/account/orders" method="get" class="search-form"><label class="sr-only" for="order_id">주문번호로 찾기</label><span class="search-icon" aria-hidden="true"></span><input id="order_id" name="order_id" inputmode="numeric" placeholder="주문번호로 찾기"><button type="submit" class="button button-primary button-small">조회 <span aria-hidden="true">→</span></button></form>
+  <div class="results-heading"><h2>주문 내역 <span id="order-count">불러오는 중</span></h2><a class="inline-link subtle" href="/account/orders">전체 내역 보기</a></div>
+  <div class="orders-table-wrap" id="orders-table" hidden><table class="orders-table"><thead><tr><th>주문번호</th><th>상품</th><th>수량</th><th>상세 보기</th></tr></thead><tbody id="order-list"></tbody></table></div>
+  <div class="empty-state" id="empty-orders" hidden><span class="empty-symbol" aria-hidden="true">▤</span><h2>표시할 주문이 없어요</h2><p>주문번호를 확인하거나 전체 내역을 확인해 보세요.</p><a class="button button-outline button-small" href="/account/orders">내 주문 목록으로</a></div>
+  <template id="order-template"><tr><td class="order-number"></td><td><div class="order-product"><span class="order-thumb" aria-hidden="true">m.</span><span class="order-product-name"></span></div></td><td class="quantity"></td><td class="order-action"><a class="detail-link">상세 보기 <span aria-hidden="true">↗</span></a></td></tr></template>
+</section>
+{% endblock %}

@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}상품 둘러보기 · MiniShop{% endblock %}
+{% block content %}
+<section class="container page-section">
+  <div class="page-heading"><div><span class="eyebrow">THE LITTLE COLLECTION</span><h1>오늘의 작은 발견<span>.</span></h1><p>상품명으로 필요한 것을 찾아보세요.</p></div><span class="heading-mark" aria-hidden="true">✳</span></div>
+  <form action="/shop" method="get" class="search-form" role="search"><label class="sr-only" for="keyword">상품명 검색</label><span class="search-icon" aria-hidden="true"></span><input id="keyword" name="q" type="search" placeholder="어떤 상품을 찾으세요?" maxlength="100"><button type="submit" class="button button-primary button-small">검색 <span aria-hidden="true">→</span></button></form>
+  <div class="results-heading"><h2>상품 목록 <span id="product-count">불러오는 중</span></h2><a class="inline-link subtle" href="/shop">전체 상품 보기 <span aria-hidden="true">↗</span></a></div>
+  <div class="product-grid" id="product-grid"></div>
+  <div class="empty-state" id="empty-products" hidden><span class="empty-symbol" aria-hidden="true">⌕</span><h2>검색 결과가 없어요</h2><p>다른 상품명으로 다시 찾아보세요.</p><a class="button button-outline button-small" href="/shop">상품 목록으로</a></div>
+  <template id="product-template"><article class="product-card"><div class="product-visual" aria-hidden="true"><span class="product-sequence"></span><div class="product-box"><span>m.</span></div><span class="visual-spark">✳</span></div><div class="product-info"><span class="product-category">MINISHOP COLLECTION</span><h3></h3><p class="product-price"><b></b><span>원</span></p></div></article></template>
+</section>
+{% endblock %}
