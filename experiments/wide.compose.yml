@@ -1,0 +1,8 @@
+# Manual, isolated experiments only. There is still no vulnerable SQL implementation.
+# Enable the wide role first, then explicitly apply this override. Restore with restore_safe.py.
+services:
+  catalog-service:
+    environment:
+      DB_USER: catalog_reader_wide
+      DB_PASSWORD: ${CATALOG_READER_WIDE_PASSWORD:?Generate .env first}
+      LAB_EXPERIMENTS_ENABLED: 'true'
