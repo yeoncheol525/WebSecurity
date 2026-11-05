@@ -1,4 +1,8 @@
-# 다음 단계의 실험 계약
+# 공격·방어 비교 실험의 준비 조건
+
+실제 작업 순서·Burp/curl 입력·측정식·정상 요청 집합·결과표는
+[README의 실험 안내](../README.md#실험-조건과-현재-구현-상태)에 정리했습니다.
+이 문서는 현재 코드의 모드 선택 경계와 다음 구현 단계의 수용 기준을 설명합니다.
 
 기준 자료는 `4조_MiniShop_실증형_최종기획서.pdf`(7쪽)와 사용자가 별도로 제공한 개발환경 구축 지시서입니다.
 이번 구현은 지시서의 **안전한 환경 구축 단계**만 수행합니다. 이전 SQLite/V0~V2 기획의 배송지 수정 기능을
@@ -34,7 +38,7 @@
 ```sh
 # 실험 전: Host-only 격리와 바인딩 주소 확인, 실험 기록 시작.
 # 관리자 자격증명은 postgres 컨테이너 안에서만 사용.
-docker compose exec postgres sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"'
+sudo docker compose -f docker-compose.yml exec postgres sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"'
 ```
 
 psql에서 다음 관리 SQL을 실행하고 `\q`로 종료합니다.
@@ -45,7 +49,7 @@ SELECT format('ALTER ROLE catalog_reader_wide LOGIN VALID UNTIL %L',
 ```
 
 ```sh
-docker compose -f docker-compose.yml -f experiments/wide.compose.yml up -d --no-deps --wait catalog-service
+sudo docker compose -f docker-compose.yml -f experiments/wide.compose.yml up -d --no-deps --wait catalog-service
 curl http://192.168.67.20:18080/health/catalog
 # database_role=catalog_reader_wide, query_mode=bound 확인.
 # Catalog에는 선택된 wide 역할의 비밀번호만 주입됨.
@@ -69,6 +73,12 @@ T12와 수동 wide 실험을 동시에 실행하지 마세요. 기본 앱 계정
 7. 정상 요청은 조건별 30회 이상, median/p95 측정. 현재 구축 테스트의 소요시간을 공격 실험 결과로 재사용하지 않음.
 8. 로그인 SQLi는 실제 해시 검증을 통과한 세션만 성공. 현재 로그인은 안전한 바인딩만 구현.
 9. IDOR 보조 실험은 정상 user1 세션과 숫자형 타인 주문 ID로 독립 수행. 현재 소유자 검증은 항상 활성화.
+
+README에서 정한 A01/A02/A03는 고객, 고객+주문, 고객+주문+결제 메타 조회 목적의 시퀀스입니다.
+조건별 30시퀀스·60공격 HTTP, 전체 120시퀀스·240공격 HTTP를 구분해 기록합니다.
+정상 시퀀스는 조건별 30개를 권장하며 검색·로그인·본인 주문을 각각 측정해 90개 요청을 얻습니다.
+요청 ID는 Nginx가 발급한 응답 헤더에서 수집합니다. 현재 감사 로그는 탐지 경고가 아니며,
+탐지기 미구현 상태의 탐지율·오탐률은 N/A로 둡니다.
 
 최종기획서의 `account_role`은 이번 지시서의 명칭에 맞춰 `order_service`,
 `catalog_overprivileged`는 `catalog_reader_wide`로 구현했습니다.
