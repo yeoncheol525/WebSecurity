@@ -6,10 +6,23 @@
 |---|---|
 | 서버 | Ubuntu 24.04 LTS amd64, Docker, Bash |
 | 클라이언트 | Kali 또는 Windows, Burp Suite Community |
-| 네트워크 | Host-only. Ubuntu `192.168.67.20`, Kali `192.168.67.10` (예시) |
+| 네트워크 | 어댑터 2개 — NAT(설치용 인터넷) + Host-only(실험망). Ubuntu `192.168.67.20`, Kali `192.168.67.10` (예시) |
 | 포트 | HTTP `18080` |
 
-두 VM을 같은 Host-only 네트워크에 두고, Host-only 인터페이스에는 외부 게이트웨이를 설정하지 않는다.
+## VM 네트워크 설정
+
+각 VM(Ubuntu 서버, Kali 공격자)에 네트워크 어댑터를 2개 둔다.
+
+| 어댑터 | 용도 | 비고 |
+|---|---|---|
+| NAT | 인터넷 — apt·Docker 설치, 이미지 다운로드 | 설치 단계에만 필요 |
+| Host-only | Kali ↔ Ubuntu 격리 실험망 | 공격·측정에 사용, 외부 비노출 |
+
+- Host-only 망은 `192.168.67.0/24`(예시)로 만들고 외부 게이트웨이를 설정하지 않는다. 고정 IP로 Ubuntu `192.168.67.20`, Kali `192.168.67.10`을 둔다. 다른 대역을 쓰면 이후 명령의 주소도 함께 바꾼다.
+- VMware: VM 설정 → 네트워크 어댑터에서 하나는 NAT, 다른 하나는 Host-only(또는 사용자 지정 VMnet)로 추가한다. Host-only 서브넷은 Edit → Virtual Network Editor에서 지정한다.
+- VirtualBox: 설정 → 네트워크 → 어댑터 1 = NAT, 어댑터 2 = 호스트 전용 어댑터. Host-only 망은 도구 → 네트워크 관리자에서 먼저 생성한다.
+- 확인: Ubuntu에서 `ip addr`로 Host-only IP를, `ping 192.168.67.10`으로 Kali 연결을, `ping 8.8.8.8`로 인터넷(NAT)을 확인한다.
+- 측정 단계에서 완전 격리를 보이려면 설치·이미지 다운로드를 마친 뒤 NAT 어댑터를 비활성화한다(선택).
 
 ## 서버 설치 · Ubuntu
 
@@ -17,10 +30,10 @@
 sudo apt-get update && sudo apt-get install -y git
 git clone https://github.com/yeoncheol525/WebSecurity.git minishop
 cd minishop
-bash scripts/setup-ubuntu.sh --bind 192.168.67.20
+bash scripts/setup-ubuntu.sh --bind 192.168.67.20   # 본인 Host-only IP로 교체, 또는 생략해 자동 선택
 ```
 
-- `--bind`: Ubuntu의 실제 Host-only 주소. 생략 시 기존 설정 유지, 첫 설치는 전용 사설 NIC 자동 선택.
+- `--bind`: 이 Ubuntu VM의 Host-only 주소. `ip addr`로 확인해 넣는다. 생략하면 사설 NIC를 자동 선택하며, 사설 IP가 여러 개면 후보를 안내한다. 지정한 주소가 이 VM에 없으면 설치를 거부한다.
 - 최초 실행 조건은 E4. Docker 설치·합성 시드·서비스 기동·healthcheck까지 수행하며 기존 DB·비밀번호는 유지한다.
 - 웹 계정 확인: `python3 scripts/demo_credentials.py`.
 

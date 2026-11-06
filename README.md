@@ -15,9 +15,11 @@ VMware Host-only 격리망, 합성 데이터(고객 100 · 주문 300 · 결제 
 
 ## 빠른 시작 · Ubuntu
 
+VM 네트워크(NAT=설치용 인터넷, Host-only=실험망) 구성은 [docs/SETUP.md](docs/SETUP.md)를 먼저 따른다.
+
 ```sh
 git clone https://github.com/yeoncheol525/WebSecurity.git minishop && cd minishop
-bash scripts/setup-ubuntu.sh --bind 192.168.67.20   # 최초 E4 · Docker·시드·기동
+bash scripts/setup-ubuntu.sh                         # 최초 E4 · Docker·시드·기동 (Host-only IP 자동 선택)
 python3 scripts/demo_credentials.py                 # 웹 로그인 계정
 ```
 
