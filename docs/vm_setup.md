@@ -1,7 +1,8 @@
 # 실제 VM 구성과 운영
 
 2026-11-05에 두 VM의 실제 구성을 완료하고, Ubuntu 32/32·Kali API 8/8·Firefox 화면 8/8 검증을 통과했다.
-초기 구성은 [설치 환경 설정](TEAM_SETUP.md)을 따른다.
+위 검증은 E1~E4 분리 이전 버전의 이력이다. 현재 설치는 서비스를 시작하는 데서 끝난다.
+초기 구성은 [설치 환경 설정](TEAM_SETUP.md), 별도 개발 검사는 [development_checks.md](development_checks.md)를 따른다.
 
 ## 현재 구성
 
@@ -41,11 +42,10 @@ Windows 작업 폴더는 `Downloads/minishop`이며 소스는 `project`, VM은 `
 
 ```sh
 cd /home/lab/minishop
-docker compose ps
-python3 scripts/verify_environment.py --no-build
+sudo docker compose ps
 python3 scripts/demo_credentials.py
-docker compose down
-docker compose up -d --wait
+sudo docker compose down
+bash scripts/setup-ubuntu.sh
 ```
 
 `down`은 데이터 볼륨을 유지한다. 안전 모드 복귀는 `python3 scripts/restore_safe.py`이다.
@@ -65,7 +65,8 @@ nc -vz -w 2 192.168.67.20 5432
 HTTP는 200, PostgreSQL 직접 접속은 실패해야 한다.
 Kali 기본 경로가 없고 192.168.67.0/24 경로만 있어야 현재 실험용 연결 상태와 같다.
 Firefox에서 서비스 주소를 열거나 Burp의 브라우저로 같은 주소를 요청한다.
-Burp/sqlmap/Firefox 실행 파일을 확인했으며, SQLi 취약 쿼리·공격 스크립트 구현은 다음 단계이다.
+2026-11-05 환경 검증에서 Burp/sqlmap/Firefox 실행 파일의 경로를 확인했다.
+현재 조건별 구현은 [실행 조건](../README.md#실행-조건), Burp GUI 사용은 [브라우저 사용](../README.md#브라우저-사용--kali-desktop--windows)을 따른다.
 
 패키지 다운로드가 필요할 때 Kali에서 기존 NAT 프로필을 일시적으로 활성화할 수 있다.
 

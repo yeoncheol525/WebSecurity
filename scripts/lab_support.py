@@ -7,6 +7,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
+EXPERIMENTS = ("E1", "E2", "E3", "E4")
 
 
 def read_env():
@@ -16,6 +17,21 @@ def read_env():
             key, value = line.split("=", 1)
             result[key.strip()] = value.strip().strip("'\"")
     return result
+
+
+def selected_experiment(values=None):
+    condition = (read_env() if values is None else values).get("LAB_EXPERIMENT", "E4")
+    if condition not in EXPERIMENTS:
+        raise ValueError("LAB_EXPERIMENT must be E1, E2, E3 or E4")
+    return condition
+
+
+def select_experiment(condition):
+    selected_experiment({"LAB_EXPERIMENT": condition})
+    path = ROOT / ".env"
+    lines = path.read_text(encoding="utf-8").splitlines()
+    lines = [line for line in lines if not line.startswith("LAB_EXPERIMENT=")]
+    path.write_text("\n".join([*lines, f"LAB_EXPERIMENT={condition}"]) + "\n", encoding="utf-8")
 
 
 @lru_cache(maxsize=1)
@@ -36,10 +52,14 @@ def docker_prefix():
 def compose(*args, capture=False, check=True, timeout=300, input_text=None):
     # Isolate this project's generated .env from unrelated shell variables.
     environment = os.environ.copy()
-    environment.update(read_env())
+    values = read_env()
+    environment.update(values)
     for name in ("COMPOSE_FILE", "COMPOSE_PROFILES", "COMPOSE_ENV_FILES"):
         environment.pop(name, None)
-    compose_files = [] if "-f" in args or "--file" in args else ["-f", str(ROOT / "docker-compose.yml")]
+    compose_files = [] if "-f" in args or "--file" in args else [
+        "-f", str(ROOT / "docker-compose.yml"),
+        "-f", str(ROOT / "experiments" / selected_experiment(values) / "compose.yml"),
+    ]
     return subprocess.run(
         [*docker_prefix(), "compose", "--project-directory", str(ROOT), "--env-file", str(ROOT / ".env"), *compose_files, *args],
         cwd=ROOT, env=environment, check=check, text=True, encoding="utf-8", errors="replace",

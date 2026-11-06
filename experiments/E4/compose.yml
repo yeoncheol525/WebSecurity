@@ -1,0 +1,8 @@
+# D1 + D2: bound search SQL, least-privilege reader (default).
+services:
+  catalog-service:
+    environment:
+      DB_USER: catalog_reader
+      DB_PASSWORD: ${CATALOG_READER_PASSWORD:?Generate .env first}
+      SQL_QUERY_MODE: bound
+      LAB_EXPERIMENTS_ENABLED: 'false'

@@ -2,8 +2,9 @@
 import argparse
 import json
 import subprocess
+import sys
 
-from lab_support import compose, docker_prefix, inspect_service, read_env
+from lab_support import ROOT, compose, docker_prefix, inspect_service, read_env
 
 
 def main():
@@ -27,7 +28,8 @@ def main():
     print(f"Deleting the explicitly confirmed synthetic lab volume: {volume}")
     compose("down")
     subprocess.run([*docker_prefix(), "volume", "rm", volume], check=True, timeout=60)
-    compose("up", "-d", "--wait", "--wait-timeout", "180")
+    # Reapply the selected condition, including the wide role for E1/E2.
+    subprocess.run([sys.executable, str(ROOT / "scripts/setup.py")], check=True)
     print("Recreated the fixed seed. Existing .env credentials were preserved.")
 
 

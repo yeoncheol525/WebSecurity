@@ -1,82 +1,70 @@
-# 공격·방어 비교 실험의 준비 조건
+# 조건 비교와 결과 기록
 
-실험 절차·Burp/curl 입력·측정식·정상 요청 집합·결과표는
-[README의 실험 안내](../README.md#실험-조건과-현재-구현-상태)를 따른다.
+조건 설정: [E1](../experiments/E1/README.md) · [E2](../experiments/E2/README.md) ·
+[E3](../experiments/E3/README.md) · [E4](../experiments/E4/README.md).
 
-기본 환경은 바인딩 쿼리와 최소 권한을 적용한 E4다.
-E1/E3 비교에는 실험용 취약 쿼리가 필요하며, 아래 표에 조건별 구현 상태를 표시한다.
+E1~E4 설정과 방어 예제 구현을 출발점으로 사용한다. 입력 집합·판정 기준 확정,
+반복 측정과 단계별 방어 효과 분석은 팀원이 직접 수행한다. 설치나 회귀 검사 통과를 아래 결과표에 옮겨 적지 않는다.
 
-## 2×2 조건과 현재 상태
+## 비교 조건
 
-| 조건 | 별칭 | 바인딩 | Catalog DB 역할 | 현재 상태 |
-|---|---|---|---|---|
-| E1 | S00 | OFF | catalog_reader_wide | 취약 쿼리 미구현, 실행 불가 |
-| E2 | S10 | ON | catalog_reader_wide | 역할·선택용 override 준비, 직접 DB 권한만 검증 |
-| E3 | S01 | OFF | catalog_reader | 취약 쿼리 미구현, 실행 불가 |
-| E4 | S11 | ON | catalog_reader | 기본 정상 서비스, 환경·인가 검증 완료 |
+| 비교 | 변경 요소 | 고정 요소 |
+|---|---|---|
+| E1 ↔ E2 | 검색 바인딩 | wide DB 역할 |
+| E3 ↔ E4 | 검색 바인딩 | 최소 권한 DB 역할 |
+| E1 ↔ E3 | DB 권한 | 문자열 삽입 검색 |
+| E2 ↔ E4 | DB 권한 | 바인딩 검색 |
 
-환경 검증 T01~T12와 추후 공격·방어 실험 E1~E4는 서로 다른 테스트이다.
-현재 T03~T05는 실제 역할로 직접 접속해 권한 오류를 확인한 증거이며, SQLi가 존재하는 서비스에서
-고객정보 유출을 방어했다는 실험 결과는 아니다.
+- 시드·입력 집합·반복 횟수·타임아웃·요청 간격 고정.
+- 실행 commit과 조건 기록.
+- 조건 전환 전 진행 중인 요청 종료.
+- 검색 구조 변경과 HTTP 응답의 비공개 데이터 노출을 별도 기록.
+- HTTP 상태 코드와 같은 request_id의 오류 원인 함께 확인.
+- HTTP 200만으로 노출 성공, 오류 응답만으로 방어 성공이라고 판정하지 않는다.
+- 정상 검색·로그인·본인 주문 결과 포함.
+- E1·E3의 작은따옴표 정상 검색 실패도 정상 기능률에 반영.
+- 로그인·주문 인가는 모든 조건에서 동일하게 유지.
 
-## 모드 선택 경계
+## 기록 항목
 
-기본 Compose는 `DB_USER=catalog_reader`, `SQL_QUERY_MODE=bound`를 고정한다.
-`bound` 이외의 SQL_QUERY_MODE로는 앱이 시작되지 않는다.
-다음 단계에서는 별도 코드 검토·격리 확인 후, 실험 전용의 쿼리 전략을 추가해야 한다.
+1. 실행 시각, commit, 조건, `/health/catalog`의 DB 역할과 query_mode.
+2. 입력 집합, 요청별 `X-Request-ID`, 상태 코드, 응답 본문, 소요시간.
+3. 같은 request_id의 서버 감사 로그와 화면 캡처.
+4. 고유 고객·주문·결제 메타 ID 수.
+5. 정상 기능 성공 건수와 기능별 지연.
 
-과다 SELECT 역할은 미리 권한을 구성하되 기본 NOLOGIN이다. T12에서만 5분 만료로 잠시 로그인 허용 후,
-고객100/주문300/결제메타300 조회 성공과 auth 조회 거부를 확인한다. finally에서 NOLOGIN·만료 및
-남은 wide 연결 종료를 수행하고, 정상 Catalog 역할이 `catalog_reader`임을 다시 확인한다.
-서비스 계정 전환 없이 권한 차이만 검사한 테스트라는 점을 구별한다.
+요청·응답 관찰: **Burp → Proxy → HTTP history → 요청 선택 → Request / Response**.
+정상 요청 재전송: **정상 검색 요청 우클릭 → Send to Repeater → Send**.
+브라우저 F12는 화면·네트워크 보조 확인에 사용한다.
+설정은 [Burp 사용 순서](../README.md#브라우저-사용--kali-desktop--windows)를 따른다.
 
-격리된 VM에서 실제 wide 역할로 **안전한 쿼리**를 실행할 준비도 제공한다.
-다음 절차는 바인딩을 유지한 채 Catalog를 wide 역할로 전환하는 E2 수동 실험용이다.
-
-```sh
-# 실험 전: Host-only 격리와 바인딩 주소 확인, 실험 기록 시작.
-# 관리자 자격증명은 postgres 컨테이너 안에서만 사용.
-sudo docker compose -f docker-compose.yml exec postgres sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"'
-```
-
-psql에서 다음 관리 SQL을 실행하고 `\q`로 종료한다.
-
-```sql
-SELECT format('ALTER ROLE catalog_reader_wide LOGIN VALID UNTIL %L',
-              clock_timestamp() + interval '5 minutes') \gexec
-```
+서버 로그 · Ubuntu:
 
 ```sh
-sudo docker compose -f docker-compose.yml -f experiments/wide.compose.yml up -d --no-deps --wait catalog-service
-curl http://192.168.67.20:18080/health/catalog
-# database_role=catalog_reader_wide, query_mode=bound 확인.
-# Catalog에는 선택된 wide 역할의 비밀번호만 주입됨.
-python3 scripts/restore_safe.py
-curl http://192.168.67.20:18080/health/catalog
-# database_role=catalog_reader, query_mode=bound 확인.
+sudo docker compose logs --tail 100 catalog-service order-service
 ```
 
-5분 만료는 추가 로그인 제한이며 이미 열린 DB 연결을 자동 종료하는 타이머가 아니다.
-실험 종료·실패 시 반드시 `restore_safe.py`로 역할과 기존 연결을 복구한다.
-T12와 수동 wide 실험은 동시에 실행하지 않는다. 기본 앱 계정의 권한은 실험 중에도 확대하지 않는다.
+## 판정 기준
 
-## 후속 실험 수용 기준
+- 데이터 분모: 고객 100명, 주문 300건, 결제 메타 300건.
+- 노출량: HTTP 응답에 포함된 고유 ID 수. 중복 ID 제외.
+- 공격 성공률: 사전에 정의한 노출 기준을 충족한 유효 시퀀스 / 전체 유효 시퀀스.
+- 주문·결제만 노출된 경우도 별도 피해로 기록.
+- 오류·타임아웃·판정 불능은 원인별 기록.
+- 정상 기능률: 정상 요청 성공 건수 / 예정 정상 요청 건수.
+- 지연: 검색·로그인·본인 주문별 median/p95.
+- p95: 정렬 후 `ceil(0.95 × n)`번째 값.
+- 자동 탐지 규칙 미구현: 탐지율·오탐률 `N/A`.
+- 미측정 항목: `미측정`.
 
-1. 공격 집합과 정상 집합을 분리하고 sequence_id를 고정. 공격 유형3종×10회×4조건=120회는 **향후 목표**.
-2. 동일 시드·컨테이너 digest·입력·요청 순서 유지. 각 시퀀스 전 복원 시 기존 증거를 보존.
-3. 공격 성공은 HTTP 200이나 SQL 오류가 아니라 비로그인 응답의 합성 customer_id 노출로 판정.
-4. E3/S01에서는 SQL 구조 변조가 실제 성립하는 증거와 private SELECT 권한 거부를 함께 제시.
-5. 코드 `execute(sql, params)`, SQL 템플릿, 실제 DB 역할, HTTP 응답을 연결. 펼쳐진 SQL 로그만으로 바인딩 판정 금지.
-6. 고객 노출량은 고유 customer_id, 주문 노출량은 고유 order_id로 집계. 탐지는 sequence_id/rule_id 중복 제거.
-7. 정상 요청은 조건별 30회 이상, median/p95 측정. 현재 구축 테스트의 소요시간을 공격 실험 결과로 재사용하지 않음.
-8. 로그인 SQLi는 실제 해시 검증을 통과한 세션만 성공. 현재 로그인은 안전한 바인딩만 구현.
-9. IDOR 보조 실험은 정상 user1 세션과 숫자형 타인 주문 ID로 독립 수행. 현재 소유자 검증은 항상 활성화.
+## 결과표
 
-A01/A02/A03는 고객, 고객+주문, 고객+주문+결제 메타 조회 목적의 시퀀스이다.
-조건별 30시퀀스·60공격 HTTP, 전체 120시퀀스·240공격 HTTP를 구분해 기록한다.
-정상 시퀀스는 조건별 30개를 권장하며 검색·로그인·본인 주문을 각각 측정해 90개 요청을 얻는다.
-요청 ID는 Nginx가 발급한 응답 헤더에서 수집한다. 현재 감사 로그는 탐지 경고가 아니며,
-탐지기 미구현 상태의 탐지율·오탐률은 N/A로 기록한다.
+| 조건 | 유효/실행 시도 | 고객 /100 | 주문 /300 | 결제 메타 /300 | 공격 성공률 | 정상 기능률 | 검색 median/p95 | 근거 파일 |
+|---|---|---|---|---|---|---|---|---|
+| E1 | 미측정 | 미측정 | 미측정 | 미측정 | 미측정 | 미측정 | 미측정 | |
+| E2 | 미측정 | 미측정 | 미측정 | 미측정 | 미측정 | 미측정 | 미측정 | |
+| E3 | 미측정 | 미측정 | 미측정 | 미측정 | 미측정 | 미측정 | 미측정 | |
+| E4 | 미측정 | 미측정 | 미측정 | 미측정 | 미측정 | 미측정 | 미측정 | |
 
-DB 역할 이름은 `order_service`와 `catalog_reader_wide`를 사용한다.
-설계 조건의 `account_role`, `catalog_overprivileged`에 각각 대응한다.
+기록 위치: 로컬 `results/`.
+공유 자료에서는 비밀번호·Cookie/Set-Cookie·토큰을 제거한다.

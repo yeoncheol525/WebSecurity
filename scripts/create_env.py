@@ -56,6 +56,7 @@ def main(bind_address=None):
     selected_bind = validate_bind(bind_address if bind_address is not None else auto_bind())
     values = {
         "COMPOSE_PROJECT_NAME": "minishop", "BIND_ADDRESS": selected_bind, "HTTP_PORT": "18080",
+        "LAB_EXPERIMENT": "E4",
         "POSTGRES_DB": "minishop", "POSTGRES_USER": "minishop_admin",
         "POSTGRES_PASSWORD": secrets.token_urlsafe(32),
         "CATALOG_READER_PASSWORD": secrets.token_urlsafe(32),

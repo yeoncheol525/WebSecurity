@@ -13,7 +13,7 @@ import urllib.request
 import xml.etree.ElementTree as ET
 from datetime import datetime, timedelta, timezone
 
-from lab_support import ROOT, admin_sql, compose, inspect_service, read_env
+from lab_support import ROOT, admin_sql, compose, inspect_service, read_env, selected_experiment
 
 
 def http_json(opener, base_url, path, body=None, headers=None):
@@ -32,6 +32,8 @@ def main():
     parser.add_argument("--no-build", action="store_true", help="Use the already built service/test images")
     args = parser.parse_args()
     values = read_env()
+    if selected_experiment(values) != "E4":
+        parser.error("Developer regression checks require E4; select it explicitly with setup.py --experiment E4. No condition was changed.")
     run_id = datetime.now(timezone(timedelta(hours=9))).strftime("%Y%m%dT%H%M%S_KST")
     result_dir = ROOT / "results" / run_id
     result_dir.mkdir(parents=True)

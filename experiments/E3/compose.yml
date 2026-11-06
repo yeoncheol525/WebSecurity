@@ -1,0 +1,8 @@
+# D2 only: interpolated search SQL, least-privilege reader.
+services:
+  catalog-service:
+    environment:
+      DB_USER: catalog_reader
+      DB_PASSWORD: ${CATALOG_READER_PASSWORD:?Generate .env first}
+      SQL_QUERY_MODE: interpolated
+      LAB_EXPERIMENTS_ENABLED: 'true'

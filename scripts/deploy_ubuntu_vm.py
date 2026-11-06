@@ -47,17 +47,14 @@ def main():
         stream(client, "python3 -c " + shlex.quote(edit))
         stream(client, "cd " + shlex.quote(remote_root) +
                " && python3 scripts/setup.py --allow-host-only-bind")
-        stream(client, "cd " + shlex.quote(remote_root) + " && python3 scripts/verify_environment.py")
-        # Only public validation artifacts are copied back. No .env or login tokens.
-        with client.open_sftp() as sftp:
-            STATE.mkdir(parents=True, exist_ok=True)
-            sftp.get(remote_root + "/results/latest.json", str(STATE / "ubuntu-validation.json"))
+        # Deployment ends after service startup. Verification is a separate manual action.
+        STATE.mkdir(parents=True, exist_ok=True)
         (STATE / "ubuntu-deployment.json").write_text(json.dumps({
             "management_ip": "192.168.186.128", "host_only_ip": "192.168.67.20",
             "username": credentials["username"], "project_directory": remote_root,
-            "service_url": "http://192.168.67.20:18080", "source": "Downloads/minishop",
+            "service_url": "http://192.168.67.20:18080", "source": "Downloads/minishop/project",
         }, indent=2), encoding="utf-8")
-        print("Ubuntu deployment and T01-T12 validation finished.", flush=True)
+        print("Ubuntu services started.", flush=True)
 
 
 if __name__ == "__main__":

@@ -2,7 +2,7 @@ from urllib.parse import urlencode
 
 from flask import abort, jsonify, redirect, request
 
-from common.runtime import create_base_app, query
+from common.runtime import create_base_app, interpolated_search, query
 
 
 PRODUCT_FIELDS = "item_key AS id, label AS name, description, amount AS price"
@@ -25,12 +25,12 @@ def create_app():
             abort(400)
         # LIKE wildcards are data too; ordinary searches use literal matching.
         term = term.replace("!", "!!").replace("%", "!%").replace("_", "!_")
-        rows = query(
-            "catalog.search",
-            "SELECT " + PRODUCT_FIELDS + " FROM catalog.public_products "
-            "WHERE label ILIKE %s ESCAPE '!' ORDER BY item_key LIMIT 100",
-            (f"%{term}%",), fetch="all",
-        )
+        sql = ("SELECT " + PRODUCT_FIELDS + " FROM catalog.public_products "
+               "WHERE label ILIKE %s ESCAPE '!' ORDER BY id LIMIT 100")
+        if app.config["SQL_QUERY_MODE"] == "interpolated":
+            rows = interpolated_search(sql, f"%{term}%")
+        else:
+            rows = query("catalog.search", sql, (f"%{term}%",), fetch="all")
         return jsonify(products=[serialize(row) for row in rows])
 
     @app.get("/products/<int:product_id>")

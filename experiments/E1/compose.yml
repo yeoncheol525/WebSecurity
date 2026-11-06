@@ -1,0 +1,8 @@
+# Baseline: interpolated search SQL, wide read privileges.
+services:
+  catalog-service:
+    environment:
+      DB_USER: catalog_reader_wide
+      DB_PASSWORD: ${CATALOG_READER_WIDE_PASSWORD:?Generate .env first}
+      SQL_QUERY_MODE: interpolated
+      LAB_EXPERIMENTS_ENABLED: 'true'

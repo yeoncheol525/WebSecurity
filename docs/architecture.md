@@ -4,7 +4,7 @@
 flowchart LR
     Client[Kali VM 192.168.67.10<br/>Browser / Burp / 테스트 클라이언트]
     N[Ubuntu VM 192.168.67.20<br/>Nginx 외부 포트 18080]
-    C[Catalog Flask / Gunicorn<br/>catalog_reader]
+    C[Catalog Flask / Gunicorn<br/>E1/E2: catalog_reader_wide<br/>E3/E4: catalog_reader]
     O[Account/Order Flask / Gunicorn<br/>order_service]
     DB[(PostgreSQL 17<br/>catalog / private / auth)]
     Client --> N
@@ -23,12 +23,12 @@ flowchart LR
 | `database`, internal | PostgreSQL, Catalog, Orders | DB 포트 publish 없음 |
 
 일시 테스트 컨테이너만 검증 프로필에서 web/database에 추가됩니다. Docker 소켓은 마운트하지 않습니다.
-Nginx에는 DB 자격증명이 없고, Catalog에는 주문·관리·wide 역할의 자격증명을 전달하지 않습니다.
+Nginx에는 DB 자격증명이 없고, Catalog에는 선택한 reader 역할 하나의 자격증명만 전달합니다.
+E1/E2는 `catalog_reader_wide`, E3/E4는 `catalog_reader`를 사용하며 주문·관리 계정은 전달하지 않습니다.
 앱·Nginx는 비root, 루트 파일시스템 읽기 전용, `/tmp` tmpfs, capability 제거로 실행합니다.
 PostgreSQL은 공식 이미지의 entrypoint를 통해 데이터 디렉터리를 준비하고 postgres OS 사용자로 실행합니다.
 
-`internal` 네트워크만으로 구성한 Nginx는 실제 테스트에서 호스트 포트가 publish되지 않았습니다.
-이를 수정해 Nginx에만 edge 네트워크를 연결했습니다. DB와 앱은 그대로 내부 네트워크에 있습니다.
+Nginx는 edge 네트워크를 통해 호스트 HTTP 포트를 공개합니다. DB와 앱은 내부 네트워크를 사용합니다.
 VMnet1 자체의 DHCP·호스트 네트워크 설정은 유지했습니다. 두 VM에 두 번째 Host-only NIC를 추가했고,
 Ubuntu 기존 NAT와 기존 5000번 웹서비스는 보존했습니다. Kali NAT 연결은 비활성화해 기본 외부 경로가 없습니다.
 
@@ -80,11 +80,12 @@ DB 역할과 웹 사용자의 권한 경계는 다릅니다. 주문 조회는 �
 Nginx가 외부 X-Request-ID를 덮어쓰고 동일 ID를 앱과 응답에 전달합니다.
 앱 로그는 요청 메서드·라우트 템플릿·숫자 user_id·DB 역할·HTTP 상태·인가결과·처리시간을 남깁니다.
 SQL 로그는 코드 소유 템플릿·템플릿 ID·파라미터 수와 타입을 기록하고 **모든 파라미터 값은 마스킹**합니다.
+E1/E3의 검색만 문자열을 직접 삽입하며 `binding=interpolated`로 기록합니다. 삽입 후 SQL 원문은 기록하지 않습니다.
+다른 쿼리는 항상 인자를 바인딩하고, 취약 검색은 Catalog의 명시적 실험 설정에서만 활성화됩니다.
 일반 요청 본문, 검색어, 원문 비밀번호·토큰·고객 PII, 예외의 DSN 문자열은 기록하지 않습니다.
 PostgreSQL에도 오류 SQL 원문의 자동 기록을 끄는 설정을 적용했습니다.
 
-현재 로그는 감사 증거입니다. 자동 탐지 규칙·alert 저장소·탐지율 측정은 다음 단계이며,
-WAF/IDS가 구현됐거나 SQLi 탐지가 검증됐다고 해석하지 않습니다.
+감사 로그 수집을 지원합니다. 자동 탐지 규칙·alert 저장소는 미구현이며 탐지율·오탐률은 N/A입니다.
 
 ## 기술 근거
 

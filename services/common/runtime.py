@@ -41,8 +41,12 @@ def create_base_app(service, *, template_folder=None, static_folder=None):
         if not (service == "catalog" and role == "catalog_reader_wide"
                 and os.getenv("LAB_EXPERIMENTS_ENABLED") == "true"):
             raise RuntimeError("Unexpected database role; lab role requires explicit opt-in")
-    if os.getenv("SQL_QUERY_MODE", "bound") != "bound":
-        raise RuntimeError("Only parameter-bound queries are implemented in this stage")
+    mode = os.getenv("SQL_QUERY_MODE", "bound")
+    if mode not in ("bound", "interpolated"):
+        raise RuntimeError("Unknown SQL query mode")
+    if mode == "interpolated" and not (service == "catalog" and os.getenv("LAB_EXPERIMENTS_ENABLED") == "true"):
+        raise RuntimeError("Interpolated search requires an explicit Catalog experiment")
+    app.config["SQL_QUERY_MODE"] = mode
 
     @app.before_request
     def begin_request():
@@ -99,7 +103,7 @@ def create_base_app(service, *, template_folder=None, static_folder=None):
             query("health.orders", "SELECT id FROM private.orders LIMIT 1", fetch="one")
             query("health.sessions", "SELECT token_hash FROM auth.sessions LIMIT 0")
         return jsonify(status="ok", service=service, database_role=g.database_role,
-                       query_mode="bound", ownership_enforced=(service == "orders"))
+                       query_mode=mode, ownership_enforced=(service == "orders"))
 
     return app
 
@@ -119,14 +123,32 @@ def get_db():
 
 def query(template_id, sql_template, params=(), *, fetch=None):
     """Only code-owned SQL templates. Values are bound, and all values are redacted in logs."""
+    return _execute_query(template_id, sql_template, params, fetch=fetch)
+
+
+def interpolated_search(sql_template, search_value):
+    """Deliberately vulnerable E1/E3 search. Never use for authentication or orders."""
+    from flask import current_app
+
+    if (g.service != "catalog" or current_app.config["SQL_QUERY_MODE"] != "interpolated"
+            or os.getenv("LAB_EXPERIMENTS_ENABLED") != "true"):
+        raise RuntimeError("Interpolated search is disabled outside E1/E3")
+    if sql_template.count("%s") != 1:
+        raise ValueError("The experiment search template must have exactly one value")
+    statement = sql_template.replace("%s", "'" + search_value + "'")
+    return _execute_query("catalog.search", sql_template, (search_value,), fetch="all", statement=statement)
+
+
+def _execute_query(template_id, sql_template, params, *, fetch, statement=None):
     started = time.perf_counter()
     fields = {
         "template_id": template_id, "sql_template": " ".join(sql_template.split()),
-        "binding": "parameters", "parameter_count": len(params),
+        "binding": "interpolated" if statement is not None else "parameters", "parameter_count": len(params),
         "parameters": [{"type": type(value).__name__, "value": "[REDACTED]"} for value in params],
     }
     try:
-        cur = get_db().execute(sql_template, params)
+        # Keep the interpolated statement out of logs, including on database errors.
+        cur = get_db().execute(statement) if statement is not None else get_db().execute(sql_template, params)
         if fetch == "one":
             result = cur.fetchone()
         elif fetch == "all":
