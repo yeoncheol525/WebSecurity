@@ -47,7 +47,7 @@ def main():
     if address.is_loopback:
         print("No dedicated private interface was selected. Add a Host-only interface, then rerun with --bind IP for Kali access.")
     print("Services ready.")
-    print(f"Experiment documentation: experiments/{experiment}/README.md")
+    print(f"Experiment procedure for {experiment}: docs/ATTACK.md")
     print("Web credentials: python3 scripts/demo_credentials.py")
 
 
