@@ -1,7 +1,7 @@
 # 아키텍처와 권한 경계
 
 ```text
-Kali(Browser·Burp·sqlmap)  →  Ubuntu :18080
+Kali(Browser·Burp)  →  Ubuntu :18080
   192.168.67.10                 Nginx  →  Catalog(Flask)  →  PostgreSQL
                                        →  Orders(Flask)   →
 ```
