@@ -25,7 +25,6 @@ E4 이외의 조건에서는 검사를 시작하지 않는다.
 |---|---|
 | `tests/` | 서비스·설치·인가 회귀 검사 |
 | `scripts/verify_kali_client.py` | Kali 출발 HTTP·네트워크 검사 |
-| `scripts/validate_vm_pair.py` | VM 간 구성 검사 |
 | `tests/browser_smoke.py` | Firefox 화면 검사 |
 
 ## 2026-11-06 실행 확인

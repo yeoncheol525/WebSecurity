@@ -99,7 +99,8 @@ Kali에서 캡처한 화면은 로컬 `results/renewal/kali-ui.png`에 보관한
 `bash scripts/setup-ubuntu.sh` 한 명령으로 공식 apt 저장소에서 Docker 29.9.3·Compose 5.7.0을 설치하고,
 전용 NIC의 192.168.67.21을 자동 선택해 32/32 검증을 통과했다.
 다시 실행했을 때 `.env`의 SHA-256이 같았고 시드 건수도 100/300/300으로 유지됐다.
-임시 VM은 프로젝트의 무시된 `results/bootstrap-cleanvm/`에만 보관하며 소스 배포에는 포함하지 않는다.
+검증 요약과 설치 로그는 `results/bootstrap-cleanvm/`에 보관한다.
+설치 검사에만 사용한 임시 VM 디스크·설정·설치용 키·스크립트는 정리했다.
 
 ## 증거
 

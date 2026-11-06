@@ -93,7 +93,7 @@ VM 사이 HTTP·인가·DB 포트 검증은 Kali VM에서 실제 실행했다.
 현재 Xorg/modesetting 드라이버의 소프트웨어 커서를 활성화했다.
 
 - 설정: `/etc/X11/xorg.conf.d/99-minishop-software-cursor.conf`, `Option "SWcursor" "true"`.
-- 실행 스크립트: `scripts/fix_kali_pointer.sh`.
+- 적용 후 일회성 커서 설정 스크립트는 정리했다. 실제 설정 파일은 Kali 안에 유지한다.
 - 현재 로그인 화면에는 LightDM 재시작으로 적용. 활성 사용자 데스크톱은 없는 상태에서 수행했다.
 - Xorg 로그에서 옵션 적용을 확인하고, 실제 VM 캡처에서 화살표 커서 표시를 확인했다.
 - 로컬 증거: `results/vm/kali-pointer-before.png`, `kali-pointer-after.png`.

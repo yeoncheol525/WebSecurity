@@ -1,3 +1,0 @@
-# Optional Windows orchestration helpers only; not needed by the Ubuntu web service.
-paramiko==5.1.0
-py7zr==1.1.4
