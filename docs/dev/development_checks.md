@@ -42,4 +42,4 @@ Ubuntu에서는 E1~E4 전환 후 실제 DB 역할·query_mode·정상 검색을 
 정상 기동·전환 확인은 같은 폴더의 `condition-startup.json`에 기록했다.
 원본 검사 결과는 Git에서 제외한다.
 
-[기존 VM 검증 기록](validation.md) · [조건별 결과표](experiment_plan.md)
+[기존 VM 검증 기록](validation.md) · [조건별 결과표](../experiment_plan.md)

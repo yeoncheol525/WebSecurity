@@ -9,6 +9,17 @@ E1~E4의 실행 환경과 방어 예제 코드를 제공하며, 조건별 실험
 담당 팀원은 [실험 진행과 제출물 안내](docs/experiment_plan.md)를 따라 입력 목록 작성부터 결과표·영상까지 직접 준비한다.
 아래 정상 검색 예시는 접속 확인용이며, 노출 사고 재현은 아직 실측하지 않았다.
 
+## 실습 순서
+
+1. **설치** — [docs/TEAM_SETUP.md](docs/TEAM_SETUP.md): VM·네트워크 준비와 `bash scripts/setup-ubuntu.sh` 한 줄.
+2. **공격** — [docs/attack_guide.md](docs/attack_guide.md): E1~E4(검색 SQLi)·A(로그인 SQLi)·C2(IDOR) 단계별 절차.
+3. **방어 입증** — [docs/defense_guide.md](docs/defense_guide.md): 무엇이 왜 막히는지와 측정·판정 기준.
+4. **기록** — [docs/experiment_plan.md](docs/experiment_plan.md): 결과표·제출물 양식.
+
+조건 전환은 `bash scripts/setup-ubuntu.sh --experiment E1|E2|E3|E4|A|C2` 한 줄이며,
+`GET /health/catalog`·`/health/orders`로 현재 적용 조건을 확인한다.
+개발·관리용 문서(회귀검사·검증이력·버전이관)는 [docs/dev/](docs/dev/)에 따로 있다.
+
 ```text
 Kali Desktop / Windows: Burp Suite + 내장 브라우저
   → Ubuntu Host-only HTTP :18080
@@ -41,7 +52,7 @@ bash scripts/setup-ubuntu.sh
 - 기존 DB와 비밀번호 유지.
 - 기본 HTTP 포트: `18080`.
 
-설치는 서비스 기동 확인에서 끝난다. 회귀 검사는 [별도 명령](docs/development_checks.md)으로 실행한다.
+설치는 서비스 기동 확인에서 끝난다. 회귀 검사는 [별도 명령](docs/dev/development_checks.md)으로 실행한다.
 
 Host-only 주소 지정:
 
@@ -76,10 +87,10 @@ Ubuntu 프로젝트 루트에서 조건 선택:
 bash scripts/setup-ubuntu.sh --experiment E1
 ```
 
-`--experiment` 허용값: `E1`, `E2`, `E3`, `E4`.
+`--experiment` 허용값: 메인 `E1`, `E2`, `E3`, `E4`와 보조 `A`(로그인 SQLi), `C2`(IDOR).
 E1·E3은 검색 문자열 삽입 모드, E2·E4는 파라미터 바인딩 모드다.
 E1·E2는 wide 역할의 로그인을 활성화하고, E3·E4는 해당 역할과 기존 연결을 비활성화한다.
-주문 소유자 검사는 모든 조건에서 유지한다.
+주문 소유자 검사는 E1~E4에서 모두 유지한다. 로그인 SQLi(A)와 소유자 검사 해제(C2)는 보조 실험으로 별도 조건이다.
 전환 후 `/health/catalog`의 `database_role`과 `query_mode`로 실제 실행 조건을 확인한다.
 DB·비밀번호·기존 결과는 전환 시 초기화하지 않는다.
 
@@ -128,15 +139,15 @@ DB 권한 비교에는 실제 역할·GRANT와 접근 허용/거부의 별도 �
 입력 목록은 [담당자 작성 양식](docs/experiment_plan.md#시작-전에-담당자가-작성할-것)에 먼저 채운다.
 그다음 정상 기능 확인, 조건별 실험 기록, 방어 원인 분석, 제출물 정리 순서로 진행한다.
 예상 결과와 실측값을 구분하며, 관측되지 않은 항목은 `미측정`으로 남긴다.
-현재 비교 범위는 상품 검색이다. 로그인·주문 소유자 검사는 항상 적용되고,
-고객정보·배송지 변경 기능과 인가 OFF/ON 비교는 현재 버전에 포함돼 있지 않다.
+메인 비교 범위는 상품 검색(E1~E4)이다. 로그인 SQLi는 조건 A, 주문 인가 OFF/ON 비교는 조건 C2로 제공한다.
+고객정보·배송지 변경 기능은 현재 버전에 포함돼 있지 않다.
 
 ## 제공 코드와 검증 범위
 
-정상 웹 기능·합성 시드·E1~E4 설정과 검색 바인딩·DB 권한·주문 소유자 검사 코드를 제공한다.
+정상 웹 기능·합성 시드·E1~E4 설정과 검색 바인딩·DB 권한·주문 소유자 검사, 그리고 보조 실험 A(로그인 SQLi)·C2(IDOR) 토글 코드를 제공한다.
 팀원은 실제로 검토·수정·검증한 내용을 기여로 기록한다.
 설치 성공과 개발 회귀 검사 통과는 조건별 공격 성공률·방어 효과의 실측 결과를 대신하지 않는다.
-조건별 결과표는 `미측정` 상태이며, [기존 VM 검증 기록](docs/validation.md)은 이전 버전의 환경 검사 이력이다.
+조건별 결과표는 `미측정` 상태이며, [기존 VM 검증 기록](docs/dev/validation.md)은 이전 버전의 환경 검사 이력이다.
 
 ## 브라우저 사용 · Kali Desktop / Windows
 
@@ -240,4 +251,4 @@ bash scripts/setup-ubuntu.sh --experiment E4
 - `tests/`: 회귀 검사.
 - `results/`: 로컬 실행 기록.
 
-[설치](docs/TEAM_SETUP.md) · [검증](docs/development_checks.md) · [결과 기록](docs/experiment_plan.md) · [구조](docs/architecture.md) · [Git](docs/GIT_COLLAB.md) · [기존 버전 갱신](docs/MIGRATION.md)
+[설치](docs/TEAM_SETUP.md) · [공격 가이드](docs/attack_guide.md) · [방어 가이드](docs/defense_guide.md) · [결과 기록](docs/experiment_plan.md) · [구조](docs/architecture.md) · [Git](docs/GIT_COLLAB.md) · [개발/관리](docs/dev/)

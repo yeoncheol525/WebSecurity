@@ -1,0 +1,8 @@
+# Auxiliary experiment A: vulnerable login (authentication bypass via SQLi).
+# Catalog stays at the safe E4 baseline; only the Orders login path is made vulnerable.
+services:
+  order-service:
+    environment:
+      LOGIN_SQL_MODE: interpolated
+      OWNERSHIP_CHECK: 'on'
+      LAB_EXPERIMENTS_ENABLED: 'true'

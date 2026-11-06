@@ -2,7 +2,7 @@
 
 2026-11-05에 두 VM의 실제 구성을 완료하고, Ubuntu 32/32·Kali API 8/8·Firefox 화면 8/8 검증을 통과했다.
 위 검증은 E1~E4 분리 이전 버전의 이력이다. 현재 설치는 서비스를 시작하는 데서 끝난다.
-초기 구성은 [설치 환경 설정](TEAM_SETUP.md), 별도 개발 검사는 [development_checks.md](development_checks.md)를 따른다.
+초기 구성은 [설치 환경 설정](TEAM_SETUP.md), 별도 개발 검사는 [development_checks.md](dev/development_checks.md)를 따른다.
 
 ## 현재 구성
 
@@ -82,7 +82,7 @@ sudo nmcli device disconnect eth0
 - Ubuntu: `results/20261105T180102_KST/`, `results/latest.json`.
 - Windows 복사본: `results/vm/ubuntu-results/`, `results/vm/ubuntu-validation.json`.
 - Kali 출발 검사: `results/vm/kali-validation.json`.
-- 최종 환경 검증 개요: [validation.md](validation.md).
+- 최종 환경 검증 개요: [validation.md](dev/validation.md).
 
 기존 Windows Docker의 검증 결과는 과거 기록이다. 최종 실행 대상은 위 Ubuntu VM이며,
 VM 사이 HTTP·인가·DB 포트 검증은 Kali VM에서 실제 실행했다.

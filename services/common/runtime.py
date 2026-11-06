@@ -44,9 +44,24 @@ def create_base_app(service, *, template_folder=None, static_folder=None):
     mode = os.getenv("SQL_QUERY_MODE", "bound")
     if mode not in ("bound", "interpolated"):
         raise RuntimeError("Unknown SQL query mode")
-    if mode == "interpolated" and not (service == "catalog" and os.getenv("LAB_EXPERIMENTS_ENABLED") == "true"):
+    lab = os.getenv("LAB_EXPERIMENTS_ENABLED") == "true"
+    if mode == "interpolated" and not (service == "catalog" and lab):
         raise RuntimeError("Interpolated search requires an explicit Catalog experiment")
     app.config["SQL_QUERY_MODE"] = mode
+    # Orders-only lab toggles for auxiliary experiments A (login SQLi) and C2 (IDOR).
+    # Both default to the secure value and only unlock under an explicit Orders experiment.
+    login_mode = os.getenv("LOGIN_SQL_MODE", "bound")
+    if login_mode not in ("bound", "interpolated"):
+        raise RuntimeError("Unknown login SQL mode")
+    if login_mode == "interpolated" and not (service == "orders" and lab):
+        raise RuntimeError("Vulnerable login requires an explicit Orders experiment")
+    ownership = os.getenv("OWNERSHIP_CHECK", "on")
+    if ownership not in ("on", "off"):
+        raise RuntimeError("OWNERSHIP_CHECK must be on or off")
+    if ownership == "off" and not (service == "orders" and lab):
+        raise RuntimeError("Disabling the ownership check requires an explicit Orders experiment")
+    app.config["LOGIN_SQL_MODE"] = login_mode
+    app.config["OWNERSHIP_CHECK"] = ownership
 
     @app.before_request
     def begin_request():
@@ -103,7 +118,9 @@ def create_base_app(service, *, template_folder=None, static_folder=None):
             query("health.orders", "SELECT id FROM private.orders LIMIT 1", fetch="one")
             query("health.sessions", "SELECT token_hash FROM auth.sessions LIMIT 0")
         return jsonify(status="ok", service=service, database_role=g.database_role,
-                       query_mode=mode, ownership_enforced=(service == "orders"))
+                       query_mode=mode,
+                       ownership_enforced=(service == "orders" and app.config["OWNERSHIP_CHECK"] == "on"),
+                       login_sql_mode=app.config.get("LOGIN_SQL_MODE", "bound"))
 
     return app
 
@@ -137,6 +154,13 @@ def interpolated_search(sql_template, search_value):
         raise ValueError("The experiment search template must have exactly one value")
     statement = sql_template.replace("%s", "'" + search_value + "'")
     return _execute_query("catalog.search", sql_template, (search_value,), fetch="all", statement=statement)
+
+
+def interpolated_query(template_id, sql_template, statement, *, fetch=None):
+    """Lab-only raw-statement execution for Orders experiments (A). Gated like interpolated_search."""
+    if os.getenv("LAB_EXPERIMENTS_ENABLED") != "true":
+        raise RuntimeError("Interpolated query is disabled outside an explicit experiment")
+    return _execute_query(template_id, sql_template, (), fetch=fetch, statement=statement)
 
 
 def _execute_query(template_id, sql_template, params, *, fetch, statement=None):

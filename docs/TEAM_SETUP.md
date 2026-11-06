@@ -40,7 +40,7 @@ bash scripts/setup-ubuntu.sh --bind 192.168.67.20
 - 기존 `.env`와 DB 유지.
 
 서비스 healthcheck 후 설치가 끝난다. 실험·결과 집계는 팀원이 직접 수행하며,
-개발 회귀 검사는 [별도 절차](development_checks.md)로 실행한다.
+개발 회귀 검사는 [별도 절차](dev/development_checks.md)로 실행한다.
 
 ## 웹 계정 확인 · Ubuntu
 
@@ -66,7 +66,7 @@ python3 scripts/demo_credentials.py
 bash scripts/setup-ubuntu.sh --experiment E1
 ```
 
-허용값: `E1`, `E2`, `E3`, `E4`.
+허용값: 메인 `E1`, `E2`, `E3`, `E4`와 보조 `A`(로그인 SQLi), `C2`(IDOR).
 조건 변경 후 브라우저에서 같은 주소를 새로고침한다.
 동시에 한 조건만 실행하며 같은 DB·주소·포트를 재사용한다.
 네 조건은 같은 사이트의 설정이다. 전환 후 `/health/catalog`의 `database_role`과 `query_mode`를 확인한다.
@@ -87,4 +87,4 @@ sudo docker compose down
 기존 PostgreSQL 볼륨에는 초기화 SQL 변경이 자동 적용되지 않는다.
 스키마·권한 변경은 별도 마이그레이션으로 적용한다.
 
-[실행 조건](../README.md) · [결과 기록](experiment_plan.md) · [검증](development_checks.md)
+[실행 조건](../README.md) · [결과 기록](experiment_plan.md) · [검증](dev/development_checks.md)

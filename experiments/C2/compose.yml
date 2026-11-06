@@ -1,0 +1,8 @@
+# Auxiliary experiment C2: broken object-level authorization (IDOR / BOLA).
+# Catalog and login stay safe; only the per-user order ownership check is disabled.
+services:
+  order-service:
+    environment:
+      LOGIN_SQL_MODE: bound
+      OWNERSHIP_CHECK: 'off'
+      LAB_EXPERIMENTS_ENABLED: 'true'

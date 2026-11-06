@@ -10,7 +10,7 @@ from urllib.parse import urlsplit
 from flask import abort, g, jsonify, redirect, render_template, request
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from common.runtime import create_base_app, get_db, query
+from common.runtime import create_base_app, get_db, interpolated_query, query
 
 
 COOKIE_NAME = "minishop_session"
@@ -72,6 +72,8 @@ def serialize_order(row):
 def create_app():
     directory = Path(__file__).resolve().parent
     app = create_base_app("orders", template_folder=str(directory / "templates"), static_folder=str(directory / "static"))
+    login_sql_mode = app.config["LOGIN_SQL_MODE"]
+    ownership_check = app.config["OWNERSHIP_CHECK"]
     # Same-cost verification for nonexistent users; generated once per Gunicorn worker.
     dummy_hash = generate_password_hash(secrets.token_urlsafe(24), method="pbkdf2:sha256:1000000")
     secure_cookie = os.getenv("SESSION_COOKIE_SECURE", "false") == "true"
@@ -118,13 +120,27 @@ def create_app():
             abort(400)
         if not (1 <= len(username) <= 64 and 1 <= len(password) <= 256):
             abort(400)
-        user = query("auth.login", "SELECT id, username, password_hash, role FROM auth.users "
-                     "WHERE username = %s", (username,), fetch="one")
-        candidate = user["password_hash"] if user and not user["password_hash"].startswith("!") else dummy_hash
-        valid = check_password_hash(candidate, password)
-        if not user or user["password_hash"].startswith("!") or not valid:
-            g.authorization_result = "invalid_credentials"
-            return jsonify(error="invalid_credentials"), 401
+        if login_sql_mode == "interpolated":
+            # LAB-ONLY (experiment A): the username is concatenated into SQL and a returned row
+            # is trusted as authenticated without verifying the password hash. This reproduces a
+            # legacy CWE-89 authentication bypass; it is unreachable unless an Orders experiment
+            # explicitly sets LOGIN_SQL_MODE=interpolated with LAB_EXPERIMENTS_ENABLED=true.
+            statement = ("SELECT id, username, password_hash, role FROM auth.users "
+                         "WHERE username = '" + username + "'")
+            user = interpolated_query("auth.login",
+                                      "SELECT id, username, password_hash, role FROM auth.users WHERE username = %s",
+                                      statement, fetch="one")
+            if user is None:
+                g.authorization_result = "invalid_credentials"
+                return jsonify(error="invalid_credentials"), 401
+        else:
+            user = query("auth.login", "SELECT id, username, password_hash, role FROM auth.users "
+                         "WHERE username = %s", (username,), fetch="one")
+            candidate = user["password_hash"] if user and not user["password_hash"].startswith("!") else dummy_hash
+            valid = check_password_hash(candidate, password)
+            if not user or user["password_hash"].startswith("!") or not valid:
+                g.authorization_result = "invalid_credentials"
+                return jsonify(error="invalid_credentials"), 401
         token, csrf_token = secrets.token_urlsafe(32), secrets.token_urlsafe(32)
         old_token = cookie_token()
         with get_db().transaction():
@@ -164,11 +180,19 @@ def create_app():
     def orders():
         if request.accept_mimetypes.best_match(["application/json", "text/html"]) == "text/html":
             return redirect("/account/orders")
-        rows = query("orders.list", "SELECT " + ORDER_FIELDS +
-                     " FROM private.orders AS o JOIN private.customers AS c ON c.id = o.customer_id "
-                     "LEFT JOIN catalog.public_products AS p ON p.item_key = o.product_id "
-                     "WHERE c.user_id = %s ORDER BY o.id", (g.authenticated_user,), fetch="all")
-        g.authorization_result = "allowed"
+        if ownership_check == "on":
+            rows = query("orders.list", "SELECT " + ORDER_FIELDS +
+                         " FROM private.orders AS o JOIN private.customers AS c ON c.id = o.customer_id "
+                         "LEFT JOIN catalog.public_products AS p ON p.item_key = o.product_id "
+                         "WHERE c.user_id = %s ORDER BY o.id", (g.authenticated_user,), fetch="all")
+        else:
+            # LAB-ONLY (experiment C2): the per-user ownership predicate is removed, so any
+            # authenticated session lists every customer's orders (CWE-639/CWE-862, BOLA/IDOR).
+            rows = query("orders.list", "SELECT " + ORDER_FIELDS +
+                         " FROM private.orders AS o JOIN private.customers AS c ON c.id = o.customer_id "
+                         "LEFT JOIN catalog.public_products AS p ON p.item_key = o.product_id "
+                         "ORDER BY o.id", (), fetch="all")
+        g.authorization_result = "allowed" if ownership_check == "on" else "ownership_disabled"
         return jsonify(orders=[serialize_order(row) for row in rows])
 
     @app.get("/orders/<int:order_id>")
@@ -176,16 +200,24 @@ def create_app():
     def order(order_id):
         if request.accept_mimetypes.best_match(["application/json", "text/html"]) == "text/html":
             return redirect(f"/account/orders/{order_id}")
-        row = query("orders.detail", "SELECT " + ORDER_FIELDS +
-                    " FROM private.orders AS o JOIN private.customers AS c ON c.id = o.customer_id "
-                    "LEFT JOIN catalog.public_products AS p ON p.item_key = o.product_id "
-                    "WHERE o.id = %s AND c.user_id = %s",
-                    (order_id, g.authenticated_user), fetch="one")
+        if ownership_check == "on":
+            row = query("orders.detail", "SELECT " + ORDER_FIELDS +
+                        " FROM private.orders AS o JOIN private.customers AS c ON c.id = o.customer_id "
+                        "LEFT JOIN catalog.public_products AS p ON p.item_key = o.product_id "
+                        "WHERE o.id = %s AND c.user_id = %s",
+                        (order_id, g.authenticated_user), fetch="one")
+        else:
+            # LAB-ONLY (experiment C2): no ownership predicate, so any order id is readable by
+            # any authenticated session (CWE-639/CWE-862, BOLA/IDOR).
+            row = query("orders.detail", "SELECT " + ORDER_FIELDS +
+                        " FROM private.orders AS o JOIN private.customers AS c ON c.id = o.customer_id "
+                        "LEFT JOIN catalog.public_products AS p ON p.item_key = o.product_id "
+                        "WHERE o.id = %s", (order_id,), fetch="one")
         if row is None:
             # Identical response for a nonexistent order and another user's order.
             g.authorization_result = "denied_or_not_found"
             abort(404)
-        g.authorization_result = "allowed"
+        g.authorization_result = "allowed" if ownership_check == "on" else "ownership_disabled"
         return jsonify(order=serialize_order(row))
 
     return app

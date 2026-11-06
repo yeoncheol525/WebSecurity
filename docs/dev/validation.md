@@ -2,7 +2,7 @@
 
 아래는 이전 코드의 실행 이력이다. 현재 설치는 검증을 실행하지 않는다.
 별도 개발 검사 방법은 [development_checks.md](development_checks.md),
-조건별 결과 기록은 [experiment_plan.md](experiment_plan.md)를 따른다.
+조건별 결과 기록은 [experiment_plan.md](../experiment_plan.md)를 따른다.
 
 검증일: **2026-11-05 KST**. Ubuntu 실행 ID: `20261105T195804_KST`.
 **Ubuntu VM 32/32, Kali API 8/8, Kali Firefox 화면 8/8 검증을 통과**했다.

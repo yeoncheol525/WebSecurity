@@ -66,6 +66,9 @@ services:
       DB_USER: order_service
       DB_PASSWORD: ${ORDER_SERVICE_PASSWORD:?Generate .env first}
       SQL_QUERY_MODE: bound
+      LOGIN_SQL_MODE: bound
+      OWNERSHIP_CHECK: 'on'
+      LAB_EXPERIMENTS_ENABLED: 'false'
       SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-false}
     networks: [web, database]
     depends_on:

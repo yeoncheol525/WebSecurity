@@ -7,7 +7,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPERIMENTS = ("E1", "E2", "E3", "E4")
+EXPERIMENTS = ("E1", "E2", "E3", "E4", "A", "C2")
 
 
 def read_env():
@@ -22,7 +22,7 @@ def read_env():
 def selected_experiment(values=None):
     condition = (read_env() if values is None else values).get("LAB_EXPERIMENT", "E4")
     if condition not in EXPERIMENTS:
-        raise ValueError("LAB_EXPERIMENT must be E1, E2, E3 or E4")
+        raise ValueError("LAB_EXPERIMENT must be one of: " + ", ".join(EXPERIMENTS))
     return condition
 
 

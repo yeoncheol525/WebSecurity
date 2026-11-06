@@ -38,4 +38,4 @@ bash scripts/setup-ubuntu.sh
 `.env`, VM, DB, 설치 이미지, 로그, 원본 결과.
 DB 스키마 변경 시 기존 볼륨에 적용할 마이그레이션 절차를 포함한다.
 
-[설치](TEAM_SETUP.md) · [기존 버전 갱신](MIGRATION.md)
+[설치](TEAM_SETUP.md) · [기존 버전 갱신](dev/MIGRATION.md)

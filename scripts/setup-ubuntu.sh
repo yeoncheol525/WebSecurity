@@ -10,7 +10,7 @@ while (( $# > 0 )); do
         --install-only) install_only=true; shift ;;
         --help|-h)
             cat <<'HELP'
-Usage: bash scripts/setup-ubuntu.sh [--experiment E1|E2|E3|E4] [--bind PRIVATE_IP | --local] [--install-only]
+Usage: bash scripts/setup-ubuntu.sh [--experiment E1|E2|E3|E4|A|C2] [--bind PRIVATE_IP | --local] [--install-only]
 
 Install missing host tools, generate local settings, seed PostgreSQL,
 and start the selected MiniShop services.
@@ -24,7 +24,7 @@ HELP
             setup_args+=(--bind "$2"); shift 2 ;;
         --experiment)
             (( $# >= 2 )) || { echo '--experiment requires E1, E2, E3 or E4' >&2; exit 2; }
-            case "$2" in E1|E2|E3|E4) ;; *) echo 'Choose E1, E2, E3 or E4' >&2; exit 2 ;; esac
+            case "$2" in E1|E2|E3|E4|A|C2) ;; *) echo 'Choose E1, E2, E3, E4, A or C2' >&2; exit 2 ;; esac
             setup_args+=(--experiment "$2"); shift 2 ;;
         --local) setup_args+=(--local); shift ;;
         *) echo "Unknown option: $1" >&2; exit 2 ;;
