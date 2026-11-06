@@ -33,7 +33,8 @@ cd minishop
 bash scripts/setup-ubuntu.sh --bind 192.168.67.20   # 본인 Host-only IP로 교체, 또는 생략해 자동 선택
 ```
 
-- `--bind`: 이 Ubuntu VM의 Host-only 주소. `ip addr`로 확인해 넣는다. 생략하면 사설 NIC를 자동 선택하며, 사설 IP가 여러 개면 후보를 안내한다. 지정한 주소가 이 VM에 없으면 설치를 거부한다.
+- `--bind`: 이 Ubuntu VM의 Host-only 주소. `ip addr`로 확인해 넣는다. 생략하면 기본 경로(NAT)를 제외한 사설 NIC(Host-only)를 자동 선택하며, 후보가 여럿이면 안내한다. 지정한 주소가 이 VM에 없으면 설치를 거부한다.
+- `--local`: Host-only 어댑터 없이 단일 VM에서 loopback(`127.0.0.1`)으로만 기동할 때 사용한다. Kali에서 접속할 수 없으므로 기능 확인용이다.
 - 최초 실행 조건은 E4. Docker 설치·합성 시드·서비스 기동·healthcheck까지 수행하며 기존 DB·비밀번호는 유지한다.
 - 웹 계정 확인: `python3 scripts/demo_credentials.py`.
 
